@@ -3,17 +3,43 @@ services:
     image: qdrant/qdrant:latest
     container_name: qdrant-lotr
     ports:
-      - "6666:6333"
+      - "6333:6333"
       - "6334:6334"
     volumes:
       - ./qdrant-storage:/qdrant/storage
+    env_file:
+      - ./docker.env
     environment:
       - QDRANT__SERVICE__HTTP_PORT=6333
       - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY:-local_qdrant_key}
     restart: unless-stopped
+    networks:
+      - shared_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:6333/collections"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+  
+  qdrant-worker:
+    image: python:3.11-slim
+    container_name: qdrant-worker
+    depends_on:
+      - qdrant
+    volumes:
+      - ./src:/scripts:ro
+      - ./requirements.txt:/requirements.txt:ro
+      - ./qdrant-worker/runner.sh:/runner.sh:ro # runner script
+    working_dir: /scripts
+    env_file:
+      - ./docker.env
+    entrypoint: ["/bin/sh", "/runner.sh"]
+    networks:
+      - shared_network
+volumes:
+  qdrant_storage:
+networks:
+  shared_network:
+    name: shared_network
