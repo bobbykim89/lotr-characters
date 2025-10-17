@@ -63,9 +63,31 @@ def search(query: str, limit: int = 5):
             with_payload=True
         )
         
-        return query_points
-        # results = [point.payload for point in query_points.points]
-        # return results
+        results = [{"id": point.id, "score": point.score, **point.payload} for point in query_points.points]
+        return results
     except Exception as e:
         print(f"Error during search: {str(e)}")
         return None
+    
+def format_hits_response(hits: list[dict[str, str|None]]):
+    """Format the results into text to plug into chatGPT"""
+    character_data = []
+    for hit in hits:
+        basic_fields = ['id', 'score', 'name', 'race', 'gender', 'realm', 'culture', 'birth', 'death', 'spouse', 'hair', 'height', 'biography', 'history']
+        character = {}
+        character.update([(field, hit[field]) for field in basic_fields if hit.get(field)])
+        character_data.append(character)
+    
+    return json.dumps(character_data, indent=2)
+
+def llm(user_prompt: str, system_prompt: str):
+    """ llm function to call openAI with our specific prompts"""
+    res = openai_client.chat.completions.create(
+        model=OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        temperature=OPENAI_TEMPERATURE
+    )
+    return res.choices[0].message.content
