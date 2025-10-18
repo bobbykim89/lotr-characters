@@ -78,7 +78,7 @@ def format_hits_response(hits: list[dict[str, str|None]]):
         character.update([(field, hit[field]) for field in basic_fields if hit.get(field)])
         character_data.append(character)
     
-    return json.dumps(character_data, indent=2)
+    return character_data
 
 def llm(user_prompt: str, system_prompt: str):
     """ llm function to call openAI with our specific prompts"""

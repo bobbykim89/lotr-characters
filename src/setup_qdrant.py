@@ -6,6 +6,7 @@ import requests
 from os import environ
 import tiktoken
 import re
+import time
 
 load_dotenv()
 
@@ -219,6 +220,10 @@ def upsert_to_qdrant_adaptive(max_tokens_per_batch: int = 7000, max_tokens_per_t
     Individual texts that nearly hit the limit are embedded one by one.
     """
 
+    # Calculate delay between requests to stay under rate limit
+    requests_per_minute=400
+    delay_seconds = 60.0 / requests_per_minute
+
     if not qd_client.collection_exists(collection_name=COLLECTION_NAME):
         print(f'Collection {COLLECTION_NAME} does not exist.')
         return
@@ -288,6 +293,7 @@ def upsert_to_qdrant_adaptive(max_tokens_per_batch: int = 7000, max_tokens_per_t
 
         try:
             embeddings = create_jina_embedding_batch_safe(texts, max_token_per_text=max_tokens_per_text)
+            time.sleep(delay_seconds)
         except Exception as batch_error:
             print(f"batch {batch_num} failed: {str(batch_error)}")
             # fallback: process individually
