@@ -52,13 +52,14 @@ jobs:
           wc -c /tmp/collections.json || true
 
           echo "🔎 Verifying collection exists: $COLLECTION_NAME"
-          if ! jq -e --arg name "$COLLECTION_NAME" '.collections[] | select(.name == $name)' /tmp/collections.json > /dev/null; then
+          if ! jq -e --arg name "$COLLECTION_NAME" '(.collections? // .result.collections? // [])[] | select(.name == $name)' /tmp/collections.json > /dev/null; then
             echo "❌ Collection '$COLLECTION_NAME' not found in Qdrant."
             echo "collections.json:"
             cat /tmp/collections.json
             exit 2
           fi
           echo "✅ Collection '$COLLECTION_NAME' found."
+
 
       - name: Upload collections.json (for debugging)
         if: always()
