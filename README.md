@@ -18,7 +18,7 @@ This project demonstrates a complete RAG pipeline, from data collection to evalu
 ## Tech Stack
 
 - **LLM**: GPT-4o-mini
-- **Embeddings**: jina-embeddings-v3 (512 dimensions)
+- **Embeddings**: jina-embeddings-v4 (512 dimensions)
 - **Vector Database**: Qdrant (local or cloud)
 - **Evaluation**: LLM-as-Judge method with multiple judge models
 
@@ -164,7 +164,6 @@ The Jina AI API has rate limits and may occasionally return internal server erro
 │   ├── files.py                            # Composable functions for read/save Json files
 │   ├── search.py                           # Composable functions for LLM and Search features
 ├── notebooks/                              # Jupyter notebook files
-├── assets/                                 # Jupyter notebook files
 ├── src/
 │   ├── assets/                             # asset files folder (json, csv)
 │   ├── scrape_data.py                      # Data collection
