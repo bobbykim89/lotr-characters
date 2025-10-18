@@ -91,3 +91,31 @@ def llm(user_prompt: str, system_prompt: str):
         temperature=OPENAI_TEMPERATURE
     )
     return res.choices[0].message.content
+
+def get_qdrant_records():
+    records, next_page_offset = qd_client.scroll(
+        collection_name=COLLECTION_NAME,
+        limit=100,
+        with_payload=True,
+        with_vectors=False
+    )
+    all_records = records
+    while next_page_offset is not None:
+        records, next_page_offset = qd_client.scroll(
+            collection_name=COLLECTION_NAME,
+            limit=100,
+            offset=next_page_offset,
+            with_payload=True,
+            with_vectors=False
+        )
+        all_records.extend(records)
+    records_data = []
+    for record in all_records:
+        record_dict = {
+            "id": record.id,
+            "payload": record.payload
+        }
+        records_data.append(record_dict)
+
+    print(f"Total records: {len(all_records)}")
+    return records_data
