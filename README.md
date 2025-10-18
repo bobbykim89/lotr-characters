@@ -36,8 +36,8 @@ This project demonstrates a complete RAG pipeline, from data collection to evalu
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repo-url>
-cd <repo-name>
+git clone https://github.com/bobbykim89/lotr-characters.git
+cd lotr-characters
 ```
 
 ### 2. Set Up Virtual Environment
