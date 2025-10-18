@@ -1,0 +1,88 @@
+name: Qdrant Health Check
+
+on:
+  # Run every 3 days at 00:00 UTC (adjust if desired)
+  schedule:
+    - cron: '0 0 */3 * *'
+  # Manual trigger for testing
+  workflow_dispatch:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  health_check:
+    runs-on: ubuntu-latest
+    env:
+      QDRANT_URL: ${{ secrets.QDRANT_URL }}
+      QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+      COLLECTION_NAME: ${{ secrets.COLLECTION_NAME }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        run: |
+          set -euo pipefail
+          if [ -z "${QDRANT_URL:-}" ]; then
+            echo "❌ QDRANT_URL secret is missing."
+            exit 1
+          fi
+          if [ -z "${QDRANT_API_KEY:-}" ]; then
+            echo "❌ QDRANT_API_KEY secret is missing."
+            exit 1
+          fi
+          if [ -z "${COLLECTION_NAME:-}" ]; then
+            echo "❌ COLLECTION_NAME secret is missing."
+            exit 1
+          fi
+          echo "✅ Using Qdrant URL: $QDRANT_URL"
+          echo "✅ Will verify collection: $COLLECTION_NAME"
+
+      - name: Ping Qdrant collections endpoint and verify collection
+        id: ping_qdrant
+        run: |
+          set -euo pipefail
+          echo "🔍 Checking Qdrant collections at: $QDRANT_URL/collections"
+          curl --retry 3 --retry-delay 3 --fail -sS \
+            -H "Content-Type: application/json" \
+            -H "api-key: ${QDRANT_API_KEY}" \
+            "${QDRANT_URL}/collections" -o /tmp/collections.json
+
+          echo "✅ Qdrant collections endpoint returned."
+          wc -c /tmp/collections.json || true
+
+          echo "🔎 Verifying collection exists: $COLLECTION_NAME"
+          if ! jq -e --arg name "$COLLECTION_NAME" '.collections[] | select(.name == $name)' /tmp/collections.json > /dev/null; then
+            echo "❌ Collection '$COLLECTION_NAME' not found in Qdrant."
+            echo "collections.json:"
+            cat /tmp/collections.json
+            exit 2
+          fi
+          echo "✅ Collection '$COLLECTION_NAME' found."
+
+      - name: Upload collections.json (for debugging)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qdrant-collections-json
+          path: /tmp/collections.json
+
+  create_issue_on_failure:
+    needs: health_check
+    runs-on: ubuntu-latest
+    if: failure() # only run when health_check fails
+    steps:
+      - name: Create issue for failed health check
+        uses: peter-evans/create-issue@v5
+        with:
+          title: "⚠️ Qdrant Health Check Failed — ${{ github.repository }}"
+          body: |
+            The scheduled Qdrant health check failed.
+
+            **Repository:** ${{ github.repository }}
+            **Workflow Run:** [View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            **Qdrant URL:** ${{ secrets.QDRANT_URL }}
+            **Collection:** ${{ secrets.COLLECTION_NAME }}
+
+            An artifact named "qdrant-collections-json" was uploaded for debugging.
+            Please inspect the artifact and job logs for details.
