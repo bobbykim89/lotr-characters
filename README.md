@@ -210,3 +210,5 @@ License
 - Data sourced from multiple Lord of the Rings character databases
 - Powered by Jina AI embeddings and Qdrant vector search
 - Evaluation framework inspired by LLM-as-Judge methodologies
+
+> Note: A cron job runs every 3 days to perform health checks on the Qdrant Cloud collection, ensuring consistent availability and performance.
